@@ -84,14 +84,50 @@ const Sound = {
 /* ---------- 全域狀態 ---------- */
 const DEFAULT_STUDENTS = ['張小明', '李大同', '王中天', '趙小美', '陳心怡', '林志豪', '黃曉莉', '徐子晴', '吳建國', '賴冠宇'];
 const state = {
-  students: store.get('local_students', DEFAULT_STUDENTS),
-  teams: store.get('local_teams', [
-    { name: '第一組', score: 0, color: COLORS[0] }, { name: '第二組', score: 0, color: COLORS[1] },
-    { name: '第三組', score: 0, color: COLORS[2] }, { name: '第四組', score: 0, color: COLORS[3] }]),
+  students: [], classes: [], classId: '',
+  teams: store.get('local_teams', ['第一組', '第二組', '第三組', '第四組', '第五組', '第六組'].map((n, i) => ({ name: n, score: 0, color: COLORS[i] }))),
   drawPool: [], drawnList: [], reportCards: [],
   apiUrl: localStorage.getItem('gas_api_url') || '',
   lastError: ''
 };
+
+/* ---------- 小組計分板：預設六組（舊資料補到六組，只做一次）---------- */
+if (!store.get('teams_v6', false)) {
+  const nm = ['第一組', '第二組', '第三組', '第四組', '第五組', '第六組'];
+  while (state.teams.length < 6) { const n = state.teams.length; state.teams.push({ name: nm[n], score: 0, color: COLORS[n % COLORS.length] }); }
+  store.set('local_teams', state.teams); store.set('teams_v6', true);
+}
+
+/* ---------- 多班級名單（至少三個班，可選班級）---------- */
+const DEFAULT_CLASS_NAMES = ['711', '712', '713'];
+(function initClasses() {
+  let cl = store.get('local_classes', null);
+  if (!Array.isArray(cl) || !cl.length) {
+    cl = DEFAULT_CLASS_NAMES.map((n, i) => ({ id: 'c' + (i + 1), name: n, students: i === 0 ? store.get('local_students', DEFAULT_STUDENTS) : [] }));
+    const tb = store.get('tb_state', null); if (tb) store.set('tb_state_c1', tb);
+    const rc = store.get('report_cards_data', null); if (rc) store.set('report_cards_data_c1', rc);
+  }
+  while (cl.length < 3) { const n = cl.length + 1; cl.push({ id: 'c' + n + Date.now().toString(36), name: DEFAULT_CLASS_NAMES[n - 1] || `${n}班`, students: [] }); }
+  state.classes = cl; store.set('local_classes', cl);
+  const cur = localStorage.getItem('cur_class'); state.classId = cl.some(c => c.id === cur) ? cur : cl[0].id;
+  state.students = cl.find(c => c.id === state.classId).students;
+})();
+const currentClass = () => state.classes.find(c => c.id === state.classId) || state.classes[0];
+const persistClasses = () => store.set('local_classes', state.classes);
+const rcKey = () => 'report_cards_data_' + state.classId;
+function renderClassSelects() {
+  document.querySelectorAll('.class-select').forEach(sel => {
+    sel.innerHTML = state.classes.map(c => `<option value="${esc(c.id)}">${esc(c.name)}（${c.students.length} 人）</option>`).join(''); sel.value = state.classId;
+  });
+  const r = $('class-rename'); if (r) r.value = currentClass().name;
+}
+function switchClass(id) {
+  if (!state.classes.some(c => c.id === id) || id === state.classId) { renderClassSelects(); return; }
+  if (state.classId) TB.save(); state.classId = id; localStorage.setItem('cur_class', id); state.reportCards = [];
+  setStudents(currentClass().students, { persist: false }); TB.reload();
+  if ($('tab-report-card').classList.contains('active')) initReportTab();
+  document.dispatchEvent(new CustomEvent('classchange')); toast(`🏫 已切換到「${currentClass().name}」`);
+}
 
 /* ---------- 雲端 API（Google Apps Script，選用）---------- */
 function setSync(status) {
@@ -131,15 +167,21 @@ function initTabs() {
 
 /* ---------- 名單（全站共用）---------- */
 function setStudents(list, { persist = true } = {}) {
-  state.students = list; if (persist) store.set('local_students', list);
+  currentClass().students = list; state.students = list; if (persist) persistClasses();
   $('txt-students').value = list.join('\n'); $('grouper-count').textContent = list.length;
-  initDrawPool();
+  renderClassSelects(); initDrawPool();
 }
 
 /* ============================================================
    1. 隨機抽籤
    ============================================================ */
-function initDrawPool() { state.drawPool = [...state.students]; state.drawnList = []; updatePickerUI(); }
+const drawKey = () => 'draw_drawn_' + state.classId;
+function initDrawPool() {
+  const pool = [...state.students], drawn = [];
+  store.get(drawKey(), []).forEach(n => { const i = pool.indexOf(n); if (i >= 0) { pool.splice(i, 1); drawn.push(n); } });
+  state.drawPool = pool; state.drawnList = drawn; updatePickerUI();
+}
+function resetDrawPool() { store.set(drawKey(), []); initDrawPool(); }
 function updatePickerUI() {
   $('stat-remaining').textContent = state.drawPool.length; $('stat-drawn').textContent = state.drawnList.length;
   const ul = $('drawn-list');
@@ -162,7 +204,7 @@ function drawStudent() {
   setTimeout(() => {
     Sound.play('correct'); Sound.play('cheer');
     if (noRepeat) state.drawPool.splice(winnerIdx, 1);
-    state.drawnList.push(winner); callApi('logDraw', 'POST', { studentName: winner });
+    state.drawnList.push(winner); store.set(drawKey(), state.drawnList); callApi('logDraw', 'POST', { studentName: winner });
     updatePickerUI(); isDrawing = false; $('btn-draw').disabled = false;
   }, 2650);
 }
@@ -222,8 +264,31 @@ function initScoreboard() {
 /* ============================================================
    3. 課堂計時器（以結束時間戳計算，切換分頁也準確）
    ============================================================ */
+/* 把「靜音 + 結尾鈴聲」做成一段 WAV，用 <audio> 播放：
+   iPad 切到別的 App、螢幕被移開或鎖定時，媒體播放仍會繼續，鈴聲就會在時間到時準時響起。 */
+const Alarm = {
+  SR: 5000, MAXSEC: 1800,
+  tone(buf, start, dur, f, amp) {
+    const n = Math.floor(dur * this.SR), s0 = Math.floor(start * this.SR);
+    for (let i = 0; i < n && s0 + i < buf.length; i++) buf[s0 + i] += Math.sin(2 * Math.PI * f * i / this.SR) * amp * Math.min(1, (n - i) / (0.08 * this.SR)) * Math.min(1, i / (0.01 * this.SR));
+  },
+  pattern() {  // 兩輪「叮叮叮—叮～」，共約 5 秒
+    const len = Math.floor(5.2 * this.SR), buf = new Float32Array(len);
+    [0, 2.6].forEach(o => { for (let k = 0; k < 3; k++) { this.tone(buf, o + k * .4, .15, 587.33, .9); this.tone(buf, o + k * .4 + .15, .15, 880, .9); } this.tone(buf, o + 1.25, 1.2, 1174.66, 1); });
+    return buf;
+  },
+  make(silentSec) {
+    const SR = this.SR, tail = this.pattern(), sil = Math.max(0, Math.floor(silentSec * SR)), n = sil + tail.length;
+    const ab = new ArrayBuffer(44 + n), v = new DataView(ab), w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+    w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, SR, true); v.setUint32(28, SR, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
+    const u8 = new Uint8Array(ab, 44); u8.fill(128);
+    for (let i = 0; i < tail.length; i++) u8[sil + i] = Math.max(0, Math.min(255, 128 + Math.round(tail[i] * 120)));
+    return URL.createObjectURL(new Blob([ab], { type: 'audio/wav' }));
+  }
+};
 const Timer = {
-  total: 300, remaining: 300, running: false, endAt: 0, tid: null,
+  total: 300, remaining: 300, running: false, endAt: 0, tid: null, armedSec: 0, audioMode: false, url: null, wake: null,
   render() {
     const m = Math.floor(this.remaining / 60), s = this.remaining % 60;
     $('timer-text').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
@@ -231,22 +296,52 @@ const Timer = {
     $('timer-progress').style.strokeDashoffset = P - ratio * P;
     const warn = this.running && this.remaining <= 10 && this.remaining > 0;
     $('timer-progress').classList.toggle('warn', warn); $('timer-text').classList.toggle('warn', warn);
+    if (this.running) document.title = `⏱ ${$('timer-text').textContent}｜翠屏老師的國文課`; else document.title = BASE_TITLE;
   },
   buttons() { $('btn-timer-start').disabled = this.running; $('btn-timer-pause').disabled = !this.running; },
+  /* 背景播放：預先把鈴聲排進音訊裡 */
+  arm(sec, testOnly) {
+    const au = $('timer-audio'); this.disarm();
+    if (!testOnly && sec > Alarm.MAXSEC) { this.audioMode = false; return; }   // 太長就退回一般提示音
+    this.url = Alarm.make(testOnly ? 0 : sec); this.armedSec = testOnly ? 0 : sec; au.src = this.url; au.volume = 1; au.currentTime = 0;
+    this.audioMode = true; const p = au.play(); if (p && p.catch) p.catch(() => { this.audioMode = false; });
+    if ('mediaSession' in navigator && !testOnly) { try { navigator.mediaSession.metadata = new MediaMetadata({ title: '課堂計時中', artist: '翠屏老師的國文課' }); } catch (e) {} }
+  },
+  disarm() { const au = $('timer-audio'); try { au.pause(); } catch (e) {} if (this.url) { URL.revokeObjectURL(this.url); this.url = null; } this.audioMode = false; },
+  async keepAwake(on) {
+    try {
+      if (on && 'wakeLock' in navigator && !this.wake) { this.wake = await navigator.wakeLock.request('screen'); this.wake.addEventListener('release', () => { this.wake = null; }); }
+      else if (!on && this.wake) { await this.wake.release(); this.wake = null; }
+    } catch (e) { this.wake = null; }
+  },
+  finish() {
+    clearInterval(this.tid); this.running = false; this.buttons(); this.render(); this.keepAwake(false);
+    const au = $('timer-audio'), handled = this.audioMode && (au.ended || au.currentTime >= this.armedSec - 0.5 || !au.paused);
+    if (!handled) Sound.play('countdown_end');
+    toast('🔔 時間到囉！請收心');
+  },
   start() {
     if (this.running || this.remaining <= 0) return;
     Sound.play('click'); this.running = true; this.endAt = Date.now() + this.remaining * 1000; this.buttons();
+    this.arm(this.remaining); this.keepAwake(true);
     this.tid = setInterval(() => {
       const left = Math.max(0, Math.ceil((this.endAt - Date.now()) / 1000));
       if (left !== this.remaining) { this.remaining = left; this.render(); }
-      if (left <= 0) { clearInterval(this.tid); this.running = false; this.buttons(); this.render(); Sound.play('countdown_end'); toast('🔔 時間到囉！請收心'); }
+      if (left <= 0) this.finish();
     }, 200);
     this.render();
   },
-  pause() { if (!this.running) return; Sound.play('click'); clearInterval(this.tid); this.running = false; this.buttons(); this.render(); },
-  reset() { Sound.play('click'); clearInterval(this.tid); this.running = false; this.remaining = this.total; this.buttons(); this.render(); },
-  set(sec) { Sound.play('click'); clearInterval(this.tid); this.running = false; this.total = this.remaining = Math.max(0, sec); this.buttons(); this.render(); }
+  pause() { if (!this.running) return; Sound.play('click'); clearInterval(this.tid); this.running = false; this.disarm(); this.keepAwake(false); this.buttons(); this.render(); },
+  reset() { Sound.play('click'); clearInterval(this.tid); this.running = false; this.disarm(); this.keepAwake(false); this.remaining = this.total; this.buttons(); this.render(); },
+  set(sec) { Sound.play('click'); clearInterval(this.tid); this.running = false; this.disarm(); this.keepAwake(false); this.total = this.remaining = Math.max(0, sec); this.buttons(); this.render(); },
+  test() { this.disarm(); this.arm(0, true); toast('🔔 測試鈴聲（iPad 請確認音量、且未開靜音）'); }
 };
+const BASE_TITLE = document.title;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !Timer.running) return;
+  Timer.keepAwake(true);
+  const left = Math.max(0, Math.ceil((Timer.endAt - Date.now()) / 1000)); Timer.remaining = left; Timer.render(); if (left <= 0) Timer.finish();
+});
 
 /* ============================================================
    4. 隨機分組器
@@ -438,7 +533,7 @@ window.addEventListener('afterprint', () => document.body.classList.remove('prin
 async function saveReportCards() {
   Sound.play('click');
   if (!state.reportCards.length) { toast('⚠️ 尚無學生成績資料可儲存！'); return; }
-  store.set('report_cards_data', state.reportCards);
+  store.set(rcKey(), state.reportCards);
   if (!state.apiUrl) { toast('💾 成績已儲存於瀏覽器（本機）'); return; }
   toast('💾 正在同步成績至雲端…');
   const r = await callApi('saveReportCards', 'POST', { reports: state.reportCards });
@@ -449,7 +544,7 @@ async function loadReportCards() {
     const r = await callApi('getReportCards', 'GET');
     if (r && r.reports && r.reports.length) { state.reportCards = r.reports; afterReportLoad('🔄 已從雲端載入段考成績！'); return; }
   }
-  const local = store.get('report_cards_data', null);
+  const local = store.get(rcKey(), null);
   if (local && local.length) { state.reportCards = local; afterReportLoad('🔄 已從瀏覽器載入成績紀錄'); }
   else { state.reportCards = state.students.map(blankCard); afterReportLoad(); }
 }
@@ -512,18 +607,24 @@ const TB = {
   SLOTS: 6, MAXG: 12, s: null, sel: null, drag: null, editing: false,
   blankGroups() { const g = {}; for (let i = 1; i <= this.MAXG; i++) g[i] = Array(this.SLOTS).fill(null); return g; },
   load() {
-    const v = store.get('tb_state', {});
+    const v = store.get('tb_state_' + state.classId, {});
     const s = this.s = {
       pool: Array.isArray(v.pool) ? v.pool : [], groups: v.groups || this.blankGroups(), scores: v.scores || {}, honors: v.honors || {},
       roles: Array.isArray(v.roles) && v.roles.length === 6 ? v.roles : TB_ROLES.map(r => ({ ...r })),
       numGroups: v.numGroups >= 1 && v.numGroups <= this.MAXG ? v.numGroups : 6,
-      className: v.className || '', date: v.date || '', subject: v.subject || '', topic: v.topic || '', rules: v.rules ?? TB_RULES
+      className: v.className || currentClass().name, date: v.date || '', subject: v.subject || '', topic: v.topic || '', rules: v.rules ?? TB_RULES
     };
     for (let i = 1; i <= this.MAXG; i++) {
       const a = Array.isArray(s.groups[i]) ? s.groups[i].slice(0, this.SLOTS) : []; while (a.length < this.SLOTS) a.push(null); s.groups[i] = a;
     }
   },
-  save() { store.set('tb_state', this.s); },
+  save() { if (this.s) store.set('tb_state_' + state.classId, this.s); },
+  reload() {
+    this.load(); const s = this.s; this.sel = null; this.editing = false;
+    $('tb-numgroups').value = s.numGroups;
+    [['tb-class', 'className'], ['tb-date', 'date'], ['tb-subject', 'subject'], ['tb-topic', 'topic']].forEach(([id, k]) => $(id).value = s[k]);
+    $('tb-rules').value = s.rules; this.renderRoles(); this.renderPool(); this.renderGroups();
+  },
   roleCls: i => 'r' + Math.min(i, 5),
   allStudents() { const m = new Map(); [...this.s.pool, ...Object.values(this.s.groups).flat().filter(Boolean)].forEach(x => m.set(x.id, x)); return [...m.values()]; },
   mk(name) { return { id: uid(), name }; },
@@ -660,17 +761,17 @@ const TB = {
 
   /* ----- 事件 ----- */
   init() {
-    this.load(); const s = this.s;
+    this.load();
     $('tb-numgroups').innerHTML = Array.from({ length: this.MAXG }, (_, i) => `<option value="${i + 1}">${i + 1} 組</option>`).join('');
-    $('tb-numgroups').value = s.numGroups;
+    $('tb-numgroups').value = this.s.numGroups;
     [['tb-class', 'className'], ['tb-date', 'date'], ['tb-subject', 'subject'], ['tb-topic', 'topic']].forEach(([id, k]) => {
-      $(id).value = s[k]; $(id).addEventListener('input', e => { s[k] = e.target.value; this.save(); });
+      $(id).value = this.s[k]; $(id).addEventListener('input', e => { this.s[k] = e.target.value; this.save(); });
     });
-    $('tb-rules').value = s.rules; $('tb-rules').addEventListener('input', e => { s.rules = e.target.value; this.save(); });
+    $('tb-rules').value = this.s.rules; $('tb-rules').addEventListener('input', e => { this.s.rules = e.target.value; this.save(); });
     $('tb-numgroups').addEventListener('change', e => this.setNum(+e.target.value));
     $('tb-all-add').addEventListener('click', () => this.scoreAll(1));
     $('tb-all-sub').addEventListener('click', () => this.scoreAll(-1));
-    $('tb-reset-score').addEventListener('click', () => { if (confirm('確定要重置所有組別分數為 0 嗎？')) { s.scores = {}; this.save(); this.renderGroups(); } });
+    $('tb-reset-score').addEventListener('click', () => { if (confirm('確定要重置所有組別分數為 0 嗎？')) { this.s.scores = {}; this.save(); this.renderGroups(); } });
     $('tb-btn-import').addEventListener('click', () => this.openImport(true));
     $('tb-btn-print').addEventListener('click', () => { Sound.play('click'); this.print(); });
     $('tb-edit-toggle').addEventListener('click', () => this.toggleEdit());
@@ -687,7 +788,7 @@ const TB = {
       this.addNames(names); this.openImport(false); toast(`📥 已新增 ${names.length} 位學生`);
     });
     // 職務
-    $('tb-roles').addEventListener('input', e => { const f = e.target.dataset.f; if (!f) return; s.roles[+e.target.dataset.i][f] = e.target.value; this.save(); this.renderGroups(); });
+    $('tb-roles').addEventListener('input', e => { const f = e.target.dataset.f; if (!f) return; this.s.roles[+e.target.dataset.i][f] = e.target.value; this.save(); this.renderGroups(); });
     // 未分組名單
     const pool = $('tb-pool');
     pool.addEventListener('click', e => {
@@ -707,7 +808,7 @@ const TB = {
       const act = e.target.closest('[data-act]');
       if (act) {
         if (act.dataset.act === 'add') this.score(g, 1); else if (act.dataset.act === 'sub') this.score(g, -1);
-        else if (act.dataset.act === 'honor') { s.honors[g] = !s.honors[g]; if (s.honors[g]) Sound.play('cheer'); this.save(); this.renderGroups(); }
+        else if (act.dataset.act === 'honor') { this.s.honors[g] = !this.s.honors[g]; if (this.s.honors[g]) Sound.play('cheer'); this.save(); this.renderGroups(); }
         return;
       }
       const slot = e.target.closest('.tb-slot'); if (!slot) return;
@@ -751,6 +852,22 @@ async function testConnection() {
   }
 }
 function initSettings() {
+  document.addEventListener('change', e => { if (e.target.classList && e.target.classList.contains('class-select')) switchClass(e.target.value); });
+  $('btn-class-rename').addEventListener('click', () => {
+    const n = $('class-rename').value.trim(); if (!n) { toast('⚠️ 班級名稱不可為空'); return; }
+    currentClass().name = n; persistClasses(); renderClassSelects(); document.dispatchEvent(new CustomEvent('classchange')); toast('✏️ 已更新班級名稱');
+  });
+  $('btn-class-add').addEventListener('click', () => {
+    const n = (prompt('新班級名稱（例：714）：', '') || '').trim(); if (!n) return;
+    const c = { id: 'c' + Date.now().toString(36), name: n, students: [] }; state.classes.push(c); persistClasses(); renderClassSelects(); switchClass(c.id);
+  });
+  $('btn-class-del').addEventListener('click', () => {
+    if (state.classes.length <= 3) { toast('⚠️ 至少要保留 3 個班級'); return; }
+    if (!confirm(`確定刪除「${currentClass().name}」及其名單、分組、成績紀錄嗎？`)) return;
+    const id = state.classId; state.classes = state.classes.filter(c => c.id !== id); persistClasses();
+    ['tb_state_', 'report_cards_data_', 'draw_drawn_', 'cl_zones_', 'cl_checks_', 'rs_counts_'].forEach(p => localStorage.removeItem(p + id));
+    state.classId = ''; switchClass(state.classes[0].id);
+  });
   $('txt-api-url').value = state.apiUrl;
   $('btn-save-api').addEventListener('click', () => {
     const u = $('txt-api-url').value.trim(); state.apiUrl = u; localStorage.setItem('gas_api_url', u); toast('💾 API 網址設定已儲存');
@@ -778,11 +895,12 @@ window.addEventListener('DOMContentLoaded', () => {
   setStudents(state.students, { persist: false }); renderTeams(); Timer.render();
 
   $('btn-draw').addEventListener('click', drawStudent);
-  $('btn-reset-pool').addEventListener('click', () => { Sound.play('click'); initDrawPool(); toast('🔄 抽籤池已重設'); });
+  $('btn-reset-pool').addEventListener('click', () => { Sound.play('click'); resetDrawPool(); toast('🔄 抽籤池已重設'); });
 
   $('btn-timer-start').addEventListener('click', () => Timer.start());
   $('btn-timer-pause').addEventListener('click', () => Timer.pause());
   $('btn-timer-reset').addEventListener('click', () => Timer.reset());
+  $('btn-timer-test').addEventListener('click', () => Timer.test());
   document.querySelectorAll('.preset-btn').forEach(b => b.addEventListener('click', () => Timer.set(+b.dataset.sec)));
   $('btn-timer-custom').addEventListener('click', () => Timer.set((parseInt($('timer-custom-min').value, 10) || 0) * 60 + (parseInt($('timer-custom-sec').value, 10) || 0)));
 

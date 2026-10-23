@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🏫 智慧課堂｜抽籤・分組・計分・計時・成績單</title>
+<title>📚 翠屏老師的國文課｜抽籤・分組・計分・計時・打掃・紅單</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <div class="app-container">
 
   <!-- ===== 側邊導覽 ===== -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header"><span class="logo-emoji">🏫</span><h1 class="logo-title">智慧課堂</h1></div>
+    <div class="sidebar-header"><span class="logo-emoji">📚</span><h1 class="logo-title">翠屏老師的國文課</h1></div>
     <nav class="nav-menu">
       <button class="nav-btn active" data-tab="picker"><span class="ic">🎯</span>隨機抽籤</button>
       <button class="nav-btn" data-tab="scoreboard"><span class="ic">🏆</span>小組計分板</button>
@@ -35,13 +35,14 @@
 
   <main class="main-content">
     <header class="mobile-header">
-      <span class="logo-emoji">🏫</span><h1 class="logo-title">智慧課堂</h1>
+      <span class="logo-emoji">📚</span><h1 class="logo-title">翠屏老師的國文課</h1>
       <button class="menu-toggle" id="menu-toggle" aria-label="選單">☰</button>
     </header>
 
     <!-- ===== 1. 隨機抽籤 ===== -->
     <section class="tab-content active" id="tab-picker">
       <div class="card title-card"><h2>🎯 隨機抽籤工具</h2><p>刺激流暢的拉霸式抽籤，支援重複與不重複抽籤，抽中紀錄可同步至雲端。</p></div>
+      <div class="class-bar"><label>🏫 班級：</label><select class="class-select"></select><span class="help-text">切換後名單、抽籤紀錄與分組會跟著換（班級管理在「雲端與名單設定」）</span></div>
       <div class="picker-layout">
         <div class="card picker-visual-card">
           <div class="slot-machine">
@@ -97,7 +98,10 @@
             <button class="btn btn-primary" id="btn-timer-start">▶ 開始</button>
             <button class="btn btn-secondary" id="btn-timer-pause" disabled>⏸ 暫停</button>
             <button class="btn btn-danger" id="btn-timer-reset">⏱️ 重設</button>
+            <button class="btn btn-secondary" id="btn-timer-test">🔔 測試鈴聲</button>
           </div>
+          <audio id="timer-audio" playsinline preload="auto"></audio>
+          <p class="help-text" style="text-align:center">iPad：先按一次「開始」即可。切到別的 App 或螢幕暫時移開，鈴聲仍會在時間到時響起（計時中會保持螢幕不休眠；請把音量調大、關閉靜音）。</p>
         </div>
         <div class="card">
           <h3>⚡ 快速設定</h3>
@@ -121,6 +125,7 @@
     <!-- ===== 4. 隨機分組器 ===== -->
     <section class="tab-content" id="tab-grouper">
       <div class="card title-card"><h2>🎲 隨機分組器</h2><p>將班級學生快速且公正地隨機分配到各小組。</p></div>
+      <div class="class-bar"><label>🏫 班級：</label><select class="class-select"></select><span class="help-text">切換後名單、抽籤紀錄與分組會跟著換（班級管理在「雲端與名單設定」）</span></div>
       <div class="grouper-layout">
         <div class="card">
           <h3>⚙️ 分組設定</h3>
@@ -148,6 +153,7 @@
     <!-- ===== 5. 異質性分組工作表 ===== -->
     <section class="tab-content" id="tab-teambuilder">
       <div class="card title-card"><h2>🧩 異質性分組工作表</h2><p>手動編排各組成員與職務（拖曳或點選皆可），搭配組別計分、榮譽證書、班級公約，並可列印 A4 工作表。</p></div>
+      <div class="class-bar"><label>🏫 班級：</label><select class="class-select"></select><span class="help-text">切換後名單、抽籤紀錄與分組會跟著換（班級管理在「雲端與名單設定」）</span></div>
 
       <div class="card tb-toolbar">
         <div class="tb-row">
@@ -260,6 +266,7 @@
     <!-- ===== 8. 段考成績單 ===== -->
     <section class="tab-content" id="tab-report-card">
       <div class="card title-card"><h2>📊 學生段考成績個別通知單</h2><p>輸入各科段考成績，自動產生含「個人 vs 班級平均」對比圖的 A4 成績單，可個別或全班批次分頁列印。</p></div>
+      <div class="class-bar"><label>🏫 班級：</label><select class="class-select"></select><span class="help-text">切換後名單、抽籤紀錄與分組會跟著換（班級管理在「雲端與名單設定」）</span></div>
       <div class="report-card-layout">
         <div class="card">
           <div class="rc-meta">
@@ -301,63 +308,108 @@
 
     <!-- ===== 打掃輪值 ===== -->
     <section class="tab-content" id="tab-cleaning">
-      <div class="card title-card"><h2>🧹 打掃輪值</h2><p>依班級名單自動分配打掃區域，可一鍵輪替、每日打卡、列印輪值表。</p></div>
-      <div class="card">
-        <div class="editor-header"><h3>👥 名單與區域</h3>
-          <div class="editor-actions">
-            <button class="btn btn-secondary btn-sm" id="cl-import-btn">📥 匯入名單</button>
-            <button class="btn btn-secondary btn-sm" id="cl-add-area">➕ 新增區域</button>
-            <button class="btn btn-primary btn-sm" id="cl-auto">🎲 自動分配</button>
-            <button class="btn btn-secondary btn-sm" id="cl-rotate">🔁 本週輪替</button>
-            <button class="btn btn-secondary btn-sm" id="cl-print">🖨️ 列印輪值表</button>
-          </div></div>
-        <div id="cl-import-box" class="x-box" style="display:none">
-          <label>貼上名單（換行、逗號、頓號分隔），或上傳 Excel / CSV（讀第一欄）：</label>
-          <textarea id="cl-import-text" rows="5" placeholder="張小明&#10;李大同&#10;王中天"></textarea>
-          <div class="settings-actions"><input type="file" id="cl-import-file" accept=".xlsx,.xls,.csv">
-            <button class="btn btn-primary btn-sm" id="cl-import-ok">確認匯入</button>
-            <button class="btn btn-secondary btn-sm" id="cl-use-all">改用全班名單</button></div>
-          <p class="help-text">此處匯入的名單只用於打掃輪值；不匯入則使用「雲端與名單設定」的全班名單。</p>
+      <div class="card title-card"><h2>🧹 打掃輪值與檢查表</h2><p>內掃區、外掃區各是一個「區塊」，換外掃區時直接新增或切換區塊就好。按週打卡（O／X）、列印，並可下載 Word 檢查表。</p></div>
+      <div class="class-bar"><label>🏫 班級：</label><select class="class-select"></select><span class="help-text">切換後名單、區塊、打卡與紅單累計都會換成該班</span></div>
+      <div class="cl-top">
+        <div class="card">
+          <div class="editor-header"><h3>📅 行事曆（點日期選週）</h3>
+            <div class="editor-actions"><button class="btn btn-secondary btn-sm" id="cl-cal-prev">◀</button><b id="cl-cal-title" style="min-width:110px;text-align:center"></b><button class="btn btn-secondary btn-sm" id="cl-cal-next">▶</button><button class="btn btn-secondary btn-sm" id="cl-cal-today">今天</button></div></div>
+          <table class="cl-cal" id="cl-cal"></table>
+          <p class="help-text">紅色＝放假日（在下方打卡表的日期標題上點一下即可標記）。第一欄是學期週次。</p>
         </div>
-        <p class="help-text" id="cl-info"></p>
-        <div id="cl-areas" class="x-grid"></div>
+        <div class="card">
+          <h3>🗓️ 本週</h3>
+          <div class="cl-week"><button class="btn btn-secondary btn-sm" id="cl-week-prev">◀ 上週</button><div id="cl-week-label"></div><button class="btn btn-secondary btn-sm" id="cl-week-next">下週 ▶</button></div>
+          <div class="form-group"><label for="cl-sem-start">學期開始日（用來算「第幾週」）</label><input type="date" id="cl-sem-start"></div>
+          <hr>
+          <h3>⬇️ Word／列印下載區</h3>
+          <div class="cl-dl">
+            <button class="btn btn-primary" id="cl-dl-zone">📄 本週・目前區塊 Word</button>
+            <button class="btn btn-primary" id="cl-dl-all">📄 本週・全部區塊 Word</button>
+            <button class="btn btn-secondary" id="cl-dl-blank">📄 空白表（目前區塊）Word</button>
+            <button class="btn btn-secondary" id="cl-dl-blank-all">📄 空白表（全部區塊）Word</button>
+            <button class="btn btn-secondary" id="cl-print">🖨️ 列印本週（目前區塊）</button>
+            <button class="btn btn-secondary" id="cl-print-all">🖨️ 列印本週（全部區塊）</button>
+            <button class="btn btn-secondary" id="cl-print-blank">🖨️ 列印空白表</button>
+            <button class="btn btn-secondary" id="cl-dl-csv">📊 打卡紀錄 CSV</button>
+          </div>
+          <p class="help-text">Word 版面比照你的 711 內掃／外掃檢查表（A4 直式，週一～週五，早／中／備註或早／中／晚）。</p>
+        </div>
       </div>
+
       <div class="card" style="margin-top:16px">
-        <div class="editor-header"><h3>✅ 本週打卡（點一下：✔ → ✘ → 空白）</h3>
-          <div class="editor-actions"><button class="btn btn-secondary btn-sm" id="cl-clear-check">🧽 清空打卡</button></div></div>
-        <div class="table-scroll"><table class="report-table" style="min-width:560px"><thead><tr><th>區域</th><th>姓名</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>✘ 次數</th></tr></thead><tbody id="cl-check"></tbody></table></div>
+        <div class="editor-header"><h3>🧱 區塊（內掃區、外掃區…）</h3>
+          <div class="editor-actions"><select id="cl-tpl"><option value="outer1">外掃區①（體育辦公室、資優教室…）</option><option value="outer2">外掃區②（辦公室、走廊、樓梯…）</option><option value="inner">內掃區（教室）</option><option value="blank">空白區塊（自行設定）</option></select><button class="btn btn-primary btn-sm" id="cl-zone-add">➕ 新增區塊</button></div></div>
+        <div class="cl-tabs" id="cl-zone-tabs"></div>
+        <div class="cl-zform">
+          <div><label>區塊名稱</label><input type="text" id="cl-z-name"></div>
+          <div><label>檢查者（座號或姓名）<span id="cl-z-checker-name" class="help-text"></span></label><input type="text" id="cl-z-checker" placeholder="例：28"></div>
+          <div><label>打卡欄位</label><select id="cl-z-cols"><option value="ame">早／中／備註</option><option value="amn">早／中／晚</option></select></div>
+        </div>
+        <div class="form-group"><label>表尾提醒（每行一則）</label><textarea id="cl-z-notes" rows="2"></textarea></div>
+        <div class="settings-actions">
+          <button class="btn btn-secondary btn-sm" id="cl-z-rotate">🔁 負責人往下一項輪替</button>
+          <button class="btn btn-secondary btn-sm" id="cl-z-dup">📑 複製此區塊</button>
+          <button class="btn btn-danger btn-sm" id="cl-z-del">🗑️ 刪除此區塊</button>
+          <button class="btn btn-secondary btn-sm" id="cl-import-btn">📥 匯入班級名單</button>
+        </div>
+        <div id="cl-import-box" class="x-box" style="display:none">
+          <label>貼上姓名（每行一位，順序＝座號 1、2、3…），或上傳 Excel／CSV（可為「座號,姓名」兩欄或只有姓名）：</label>
+          <textarea id="cl-import-text" rows="5" placeholder="張小明&#10;李大同&#10;王中天"></textarea>
+          <div class="settings-actions"><input type="file" id="cl-import-file" accept=".xlsx,.xls,.csv"><button class="btn btn-primary btn-sm" id="cl-import-ok">確認匯入（覆蓋目前班級名單）</button></div>
+          <p class="help-text">名單只存在這台裝置的瀏覽器，用來把座號對照成姓名；負責人以座號記錄，不會把姓名寫進網站程式。</p>
+        </div>
+        <h3 style="margin-top:14px">工作項目與負責人</h3>
+        <div class="table-scroll"><table class="cl-items"><thead><tr><th>#</th><th>組別（相同可合併）</th><th>工作項目</th><th>負責人（座號）</th><th></th></tr></thead><tbody id="cl-items"></tbody></table></div>
+        <button class="btn btn-secondary btn-sm" id="cl-item-add" style="margin-top:8px">➕ 新增工作項目</button>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="editor-header"><h3>✅ 本週打卡（點一下：O 通過 → X 未通過 → 清空）</h3>
+          <div class="editor-actions"><button class="btn btn-secondary btn-sm" id="cl-clear-week">🧽 清空本週此區塊</button></div></div>
+        <div class="table-scroll" id="cl-sheet-wrap"></div>
+        <p class="help-text" id="cl-x-summary"></p>
       </div>
     </section>
 
-    <!-- ===== 紅單開立通知 ===== -->
+    <!-- ===== 紅單 ===== -->
     <section class="tab-content" id="tab-redslip">
-      <div class="card title-card"><h2>🟥 紅單開立通知</h2><p>貼上座號或姓名（或匯入 Excel / CSV），自動產生紅單通知，A4 一頁四張，可直接列印。</p></div>
+      <div class="card title-card"><h2>🟥 紅單開立通知</h2><p>導師紅單（校園生活、學習狀況通知單）與任課老師紅單（國文作業通知單）兩種版本。輸入座號或姓名，自動帶入日期與班級，可預覽、列印或下載 Word。</p></div>
+      <div class="class-bar"><label>🏫 班級：</label><select class="class-select"></select><span class="help-text">切換後名單、區塊、打卡與紅單累計都會換成該班</span></div>
       <div class="redslip-layout">
         <div class="card">
-          <div class="rc-meta">
-            <div><label>學校名稱</label><input type="text" id="rs-school"></div>
-            <div><label>班級</label><input type="text" id="rs-class"></div>
-            <div><label>開立人（導師／科任）</label><input type="text" id="rs-teacher"></div>
-            <div><label>開立日期</label><input type="date" id="rs-date"></div>
+          <h3>1. 選擇版本</h3>
+          <div class="rs-tpls">
+            <label class="rs-tpl"><input type="radio" name="rs-tpl" value="life"><span><b>🟥 導師紅單</b><br><small>校園生活、學習狀況通知單（五張紅單一支警告）</small></span></label>
+            <label class="rs-tpl"><input type="radio" name="rs-tpl" value="hw"><span><b>📘 任課老師紅單</b><br><small>國文作業通知單（記缺點一次）</small></span></label>
           </div>
-          <div class="form-group"><label for="rs-reason">預設事由</label>
-            <input type="text" id="rs-reason" list="rs-reason-list" placeholder="例：作業未繳交">
-            <datalist id="rs-reason-list"><option value="作業未繳交"><option value="上課遲到"><option value="服裝儀容不整"><option value="上課秩序不佳"><option value="未攜帶學用品"><option value="打掃不確實"><option value="未繳回家長簽章"></datalist></div>
-          <div class="form-group"><label for="rs-reason2">改善期限／備註（選填）</label><input type="text" id="rs-note" placeholder="例：請於下週一前補交"></div>
-          <div class="form-group"><label for="rs-text">名單或座號（每行一筆；可在後面加事由）：</label>
-            <textarea id="rs-text" rows="8" placeholder="3,5,12&#10;7 數學習作未交&#10;王小明&#10;15-18 遲到"></textarea>
-            <p class="help-text">座號依「全班名單」順序（第 1 位＝1 號）。支援 3,5,12、範圍 15-18、直接寫姓名；空格後的文字當作該行的事由。</p></div>
-          <div class="settings-actions">
-            <input type="file" id="rs-file" accept=".xlsx,.xls,.csv">
-            <button class="btn btn-primary" id="rs-gen">🟥 產生紅單</button>
-            <button class="btn btn-secondary" id="rs-all">👥 全班名單帶入</button>
+          <div class="rc-meta" style="margin-top:12px">
+            <div><label>日期</label><input type="date" id="rs-date"></div>
+            <div id="rs-subject-wrap"><label>課堂（科目）</label><input type="text" id="rs-subject"></div>
+            <div><label>任課老師</label><input type="text" id="rs-teacher"></div>
           </div>
-          <p class="help-text">Excel / CSV：第一欄座號或姓名，第二欄事由（選填）。</p>
+          <div id="rs-life-box">
+            <h3>2. 發生狀況（可複選）</h3>
+            <div id="rs-life-items"></div>
+          </div>
+          <div id="rs-hw-box">
+            <h3>2. 作業通知內容</h3>
+            <div class="rc-meta"><div><label>年級</label><input type="text" id="rs-grade" style="width:70px"></div><div><label>班級</label><input type="text" id="rs-cls" style="width:70px"></div><div><label>補交日期（選填）</label><input type="date" id="rs-due"></div></div>
+            <div class="form-group"><label>作業項目</label><div id="rs-hw-items"></div><input type="text" id="rs-hw-other" placeholder="其他作業名稱（選填）" style="margin-top:6px"></div>
+            <div class="form-group"><label>事由用語</label><input type="text" id="rs-phrase" placeholder="未確實訂正或完成"></div>
+          </div>
+          <h3>3. 要開立的學生</h3>
+          <div class="form-group"><textarea id="rs-text" rows="4" placeholder="3,5,12&#10;15-18&#10;王小明"></textarea>
+            <p class="help-text">座號（依「雲端與名單設定」的班級名單順序）、範圍（15-18）或姓名，用逗號、空白或換行分隔。</p></div>
+          <div class="settings-actions"><input type="file" id="rs-file" accept=".xlsx,.xls,.csv"><button class="btn btn-primary" id="rs-gen">🟥 產生紅單</button><button class="btn btn-secondary" id="rs-all">👥 全班</button></div>
+          <p class="help-text">Excel／CSV：第一欄放座號或姓名。可以換一組勾選內容、再輸入另一批學生，連續產生多批。</p>
         </div>
         <div class="card">
-          <div class="preview-header"><h3>👁️ 紅單預覽 <span id="rs-count" class="help-text"></span></h3>
-            <div class="preview-actions"><button class="btn btn-secondary btn-sm" id="rs-clear">🗑️ 清空</button><button class="btn btn-primary btn-sm" id="rs-print">🖨️ 列印全部</button></div></div>
+          <div class="preview-header"><h3>👁️ 預覽 <span id="rs-count" class="help-text"></span></h3>
+            <div class="preview-actions"><button class="btn btn-secondary btn-sm" id="rs-clear">🗑️ 清空</button><button class="btn btn-secondary btn-sm" id="rs-word">📄 下載 Word（目前版本）</button><button class="btn btn-primary btn-sm" id="rs-print">🖨️ 列印全部</button></div></div>
           <div class="paper-wrap"><div id="rs-preview"><div class="empty-preview">尚未產生紅單</div></div></div>
+          <h3 style="margin-top:14px">📒 導師紅單累計（五張一支警告）</h3>
+          <div id="rs-ledger" class="rs-ledger"></div>
         </div>
       </div>
     </section>
@@ -381,6 +433,8 @@
         </div>
         <div class="card">
           <h3>👥 學生名單管理</h3>
+          <div class="form-group"><label>目前編輯的班級（至少 3 個班，可自行新增）：</label>
+            <div class="class-manage"><select class="class-select"></select><input type="text" id="class-rename" placeholder="班級名稱"><button class="btn btn-secondary btn-sm" id="btn-class-rename">✏️ 改名</button><button class="btn btn-secondary btn-sm" id="btn-class-add">➕ 新增班級</button><button class="btn btn-danger btn-sm" id="btn-class-del">🗑️ 刪除</button></div></div>
           <div class="form-group">
             <label for="txt-students">班級學生名單（每行一位，也可用逗號、頓號分隔）：</label>
             <textarea id="txt-students" rows="12" placeholder="張小明&#10;李大同&#10;王中天"></textarea>
@@ -417,7 +471,8 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=2"></script>
-<script src="extra.js?v=1"></script>
+<script src="vendor/docx.js"></script>
+<script src="app.js?v=4"></script>
+<script src="extra.js?v=2"></script>
 </body>
 </html>

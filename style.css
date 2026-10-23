@@ -318,32 +318,88 @@ body.flash-alert::after{content:"";position:fixed;inset:0;pointer-events:none;z-
   .menu-toggle{border:none;background:rgba(255,255,255,.12);color:#fff;font-size:1.3rem;border-radius:10px;width:42px;height:42px}
 }
 
-/* ---------- 擴充：打掃輪值 / 紅單 ---------- */
-.x-box{background:#f6f8fd;border:1px dashed var(--line);border-radius:12px;padding:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
-.x-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:8px}
-.x-area{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;display:flex;flex-direction:column;gap:8px}
-.x-area-head{display:flex;gap:8px;align-items:center}
-.x-area-head input{flex:1;font-weight:700}
-.x-n{font-size:.8rem;color:var(--muted);white-space:nowrap}
-.x-chips{display:flex;flex-wrap:wrap;gap:6px}
-.x-chip{background:#eef1fb;border-radius:999px;padding:3px 6px 3px 10px;font-size:.85rem;display:inline-flex;align-items:center;gap:4px}
-.x-chip button{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1}
-.x-cell{text-align:center;cursor:pointer;user-select:none;min-width:40px;font-weight:700}
-.x-cell:hover{background:#eef1fb}
-.redslip-layout{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:16px;align-items:start}
-.rs-grid{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+/* ---------- 班級選擇列 ---------- */
+.class-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 14px;margin:-4px 0 14px}
+.class-bar label{font-weight:700}
+.class-bar select,.class-manage select{min-width:150px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);font:inherit;background:#fff}
+.class-manage{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.class-manage input{width:130px}
+
+/* ---------- 打掃輪值 ---------- */
+.x-box{background:#f6f8fd;border:1px dashed var(--line);border-radius:12px;padding:14px;margin:12px 0;display:flex;flex-direction:column;gap:8px}
+.cl-top{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:16px;align-items:start}
+.cl-cal{width:100%;border-collapse:collapse;text-align:center;font-size:.9rem}
+.cl-cal th{color:var(--muted);font-weight:700;padding:4px 0}
+.cl-cal td{padding:7px 0;cursor:pointer;border-radius:8px}
+.cl-cal td.wn{color:var(--muted);font-size:.78rem;width:28px;cursor:default}
+.cl-cal td.out{color:#bbb}
+.cl-cal td.today{outline:2px solid #4DABF7;outline-offset:-2px}
+.cl-cal td.hol{color:#e03131;font-weight:700}
+.cl-cal tr.sel td{background:#fff3bf}
+.cl-cal tr.sel td.wn{background:#ffe066;font-weight:700;color:#111}
+.cl-cal td.d:hover{background:#eef1fb}
+.cl-week{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:1.05rem}
+.cl-dl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cl-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.cl-tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;cursor:pointer;font:inherit}
+.cl-tab.on{background:#4c6ef5;color:#fff;border-color:#4c6ef5;font-weight:700}
+.cl-zform{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:10px}
+.cl-zform label{display:block;font-weight:700;margin-bottom:4px}
+.cl-items{width:100%;border-collapse:collapse;min-width:640px}
+.cl-items th{text-align:left;font-size:.85rem;color:var(--muted);padding:4px}
+.cl-items td{padding:3px;vertical-align:top}
+.cl-items input{width:100%}
+.cl-items td.idx{width:28px;color:var(--muted);text-align:center;padding-top:10px}
+.cl-items td.ops{white-space:nowrap}
+.cl-items td.ops button{border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;padding:3px 7px;margin-left:2px}
+.cl-items .nm{margin:2px 0 0;min-height:1em}
+/* 週表（畫面與列印共用，比照 Word 檢查表）*/
+.cl-sheet-wrap{background:#fff;padding:6px;min-width:760px;color:#111}
+.cl-title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;font-size:1.15rem}
+.cl-sheet{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.cl-sheet th,.cl-sheet td{border:1px solid #111;padding:3px 2px;text-align:center;overflow-wrap:anywhere}
+.cl-sheet th{background:#f2f2f2}
+.cl-sheet .cl-cap{font-size:14px;background:#fff}
+.cl-sheet .cl-dh{font-size:11px}
+.cl-sheet .cl-dh.hol{background:#ffe3e3;color:#c92a2a}
+.cl-sheet .cl-sub{font-size:10px;width:24px}
+.cl-sheet td.cl-g{font-weight:700;width:34px}
+.cl-sheet td.cl-n{text-align:center;width:150px}
+.cl-sheet td.cl-m{width:90px}
+.cl-sheet td.cl-c{height:28px;font-weight:700;cursor:pointer}
+.cl-sheet td.cl-c.o{color:#2b8a3e}
+.cl-sheet td.cl-c.x{color:#e03131;background:#fff5f5}
+.cl-sheet td.cl-note{font-size:10px;text-align:left}
+.cl-sheet td.cl-hol{background:#eee}
+.cl-sheet th.cl-dh[data-day]{cursor:pointer}
+.cl-foot{margin-top:8px;font-size:12px;line-height:1.7}
+@media print{.cl-print-page{page-break-after:always;padding:6mm}.cl-sheet-wrap{min-width:0;padding:0}.cl-sheet{font-size:10.5px}.cl-sheet td.cl-c{height:7.4mm}}
+/* ---------- 紅單 ---------- */
+.redslip-layout{display:grid;grid-template-columns:minmax(320px,440px) 1fr;gap:16px;align-items:start}
+.rs-tpls{display:grid;gap:8px}
+.rs-tpl{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;background:#fff}
+.rs-tpl:has(input:checked){border-color:#e03131;background:#fff5f5}
+.rs-ck{display:flex;gap:8px;align-items:flex-start;padding:3px 0;font-size:.92rem;cursor:pointer}
+.rs-ck.inline{display:inline-flex;margin-right:12px}
+.rs-inl{width:110px;padding:1px 6px;margin:0 3px}
+.rs-ledger{display:flex;flex-wrap:wrap;gap:8px}
+.rs-chip{background:#fff0f0;border:1px solid #f1a5a5;border-radius:999px;padding:4px 6px 4px 12px;font-size:.88rem;display:inline-flex;gap:5px;align-items:center}
+.rs-chip button{border:1px solid #f1a5a5;background:#fff;border-radius:6px;cursor:pointer;padding:1px 7px}
+.rs-grid{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
 .rs-grid-prev{gap:12px}
 .rs-wrap{position:relative}
 .rs-x{position:absolute;top:6px;right:6px;padding:2px 8px}
-.rs-slip{background:#fff;border:2px solid #e03131;border-radius:8px;padding:12px 14px;font-size:13px;color:#111;display:flex;flex-direction:column;gap:6px;height:100%}
-.rs-head{background:#e03131;color:#fff;text-align:center;font-weight:900;font-size:16px;border-radius:5px;padding:5px 0;letter-spacing:2px}
-.rs-sub{text-align:center;color:#475569;font-size:12px}
-.rs-tb{width:100%;border-collapse:collapse}
-.rs-tb th,.rs-tb td{border:1px solid #f1a5a5;padding:4px 6px;text-align:left}
-.rs-tb th{background:#fff0f0;width:56px;white-space:nowrap}
-.rs-msg{font-size:12px;line-height:1.5}
-.rs-sign{margin-top:auto;font-weight:700;display:flex;align-items:flex-end;gap:6px}
-.rs-sign .sign-line{flex:1;border-bottom:1px solid #111;height:18px;display:inline-block}
-@media (max-width:1100px){.redslip-layout{grid-template-columns:1fr}}
-@media (max-width:560px){.rs-grid-prev{grid-template-columns:1fr}}
-@media print{.rs-grid{height:270mm;grid-template-rows:1fr 1fr;gap:6mm;padding:4mm}.rs-slip{font-size:13.5px}}
+.rs-slip{background:#fff;border:1.5px solid #222;padding:9px 12px;font-size:11.5px;line-height:1.5;color:#111;height:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:1px}
+.rs-slip.life{border-color:#e03131;border-width:2px}
+.rs-slip .rs-t{text-align:center;font-weight:900;font-size:14px;text-decoration:underline;margin-bottom:2px}
+.rs-slip .rs-b{font-weight:700}
+.rs-slip .rs-it .bx{font-size:13px}
+.rs-slip .rs-it .bx.on{color:#e03131;font-weight:900}
+.rs-slip .rs-note{margin:3px 0}
+.rs-slip .rs-foot{text-align:center;font-weight:900;margin-top:auto}
+.rs-slip .rs-r{text-align:right}
+.rs-slip.hw{font-size:12.5px;line-height:1.7;gap:4px}
+.rs-slip .rs-star{margin:2px 0 6px}
+@media print{.rs-page .rs-grid{height:274mm;grid-template-rows:1fr 1fr;gap:4mm;padding:0}.rs-page.hw6 .rs-grid{grid-template-rows:1fr 1fr 1fr}.rs-slip{font-size:11px;border-radius:0}.rs-slip.hw{font-size:12.5px}}
+@media (max-width:1100px){.redslip-layout,.cl-top{grid-template-columns:1fr}}
+@media (max-width:560px){.rs-grid-prev{grid-template-columns:1fr}.cl-dl{grid-template-columns:1fr}}
