@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏫 智慧課堂｜抽籤・分組・計分・計時・成績單</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+<div class="app-container">
+
+  <!-- ===== 側邊導覽 ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header"><span class="logo-emoji">🏫</span><h1 class="logo-title">智慧課堂</h1></div>
+    <nav class="nav-menu">
+      <button class="nav-btn active" data-tab="picker"><span class="ic">🎯</span>隨機抽籤</button>
+      <button class="nav-btn" data-tab="scoreboard"><span class="ic">🏆</span>小組計分板</button>
+      <button class="nav-btn" data-tab="timer"><span class="ic">⏱️</span>課堂計時器</button>
+      <button class="nav-btn" data-tab="grouper"><span class="ic">🎲</span>隨機分組器</button>
+      <button class="nav-btn" data-tab="teambuilder"><span class="ic">🧩</span>異質性分組工作表</button>
+      <button class="nav-btn" data-tab="soundboard"><span class="ic">🎵</span>互動音效板</button>
+      <button class="nav-btn" data-tab="noise"><span class="ic">🔊</span>趣味音量計</button>
+      <button class="nav-btn" data-tab="report-card"><span class="ic">📊</span>段考成績單</button>
+      <button class="nav-btn" data-tab="cleaning"><span class="ic">🧹</span>打掃輪值</button>
+      <button class="nav-btn" data-tab="redslip"><span class="ic">🟥</span>紅單開立通知</button>
+      <button class="nav-btn" data-tab="settings"><span class="ic">⚙️</span>雲端與名單設定</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sync-status offline" id="sync-indicator"><span class="status-dot"></span><span id="sync-text">載入中...</span></div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="mobile-header">
+      <span class="logo-emoji">🏫</span><h1 class="logo-title">智慧課堂</h1>
+      <button class="menu-toggle" id="menu-toggle" aria-label="選單">☰</button>
+    </header>
+
+    <!-- ===== 1. 隨機抽籤 ===== -->
+    <section class="tab-content active" id="tab-picker">
+      <div class="card title-card"><h2>🎯 隨機抽籤工具</h2><p>刺激流暢的拉霸式抽籤，支援重複與不重複抽籤，抽中紀錄可同步至雲端。</p></div>
+      <div class="picker-layout">
+        <div class="card picker-visual-card">
+          <div class="slot-machine">
+            <div class="slot-window"><div class="slot-reel" id="slot-reel"><div class="slot-item">準備抽籤</div></div></div>
+            <div class="slot-pointer">◀</div>
+          </div>
+          <div class="picker-controls">
+            <button class="btn btn-primary btn-lg" id="btn-draw">🎉 開始抽籤</button>
+            <div class="toggle-control">
+              <label class="switch"><input type="checkbox" id="chk-norepeat" checked><span class="slider"></span></label>
+              <span>排除已抽中學生（不重複）</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>📊 抽籤狀態</h3>
+          <div class="picker-stats">
+            <div class="stat-item"><span class="stat-val" id="stat-remaining">0</span><span class="stat-lbl">未抽人數</span></div>
+            <div class="stat-item"><span class="stat-val" id="stat-drawn">0</span><span class="stat-lbl">已抽人數</span></div>
+          </div>
+          <hr>
+          <h3>🕒 抽籤歷程（本次）</h3>
+          <div class="drawn-list-container"><ul class="drawn-list" id="drawn-list"><li class="empty-msg">尚無抽籤紀錄</li></ul></div>
+          <button class="btn btn-secondary btn-sm" id="btn-reset-pool" style="width:100%;margin-top:12px">🔄 重設抽籤池</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 2. 小組計分板 ===== -->
+    <section class="tab-content" id="tab-scoreboard">
+      <div class="card title-card"><h2>🏆 小組計分板</h2><p>即時課堂評分工具，增加競爭感與學習動機。分數會自動儲存，設定雲端後也會同步至試算表。</p></div>
+      <div class="scoreboard-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-add-team">➕ 新增組別</button>
+        <button class="btn btn-secondary btn-sm" id="btn-reset-scores">🔄 分數歸零</button>
+        <button class="btn btn-primary btn-sm" id="btn-save-scores">💾 手動同步分數</button>
+      </div>
+      <div class="teams-grid" id="teams-grid"></div>
+    </section>
+
+    <!-- ===== 3. 課堂計時器 ===== -->
+    <section class="tab-content" id="tab-timer">
+      <div class="card title-card"><h2>⏱️ 課堂計時器</h2><p>專注活動或小組討論計時，圓形進度條搭配叮咚警示音。</p></div>
+      <div class="timer-layout">
+        <div class="card timer-main">
+          <div class="timer-display-container">
+            <svg class="timer-svg" viewBox="0 0 100 100">
+              <circle class="timer-bg" cx="50" cy="50" r="45"/>
+              <circle class="timer-progress" id="timer-progress" cx="50" cy="50" r="45" stroke-dasharray="282.74" stroke-dashoffset="0"/>
+            </svg>
+            <div class="timer-text" id="timer-text">05:00</div>
+          </div>
+          <div class="timer-buttons">
+            <button class="btn btn-primary" id="btn-timer-start">▶ 開始</button>
+            <button class="btn btn-secondary" id="btn-timer-pause" disabled>⏸ 暫停</button>
+            <button class="btn btn-danger" id="btn-timer-reset">⏱️ 重設</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>⚡ 快速設定</h3>
+          <div class="preset-grid">
+            <button class="btn btn-secondary preset-btn" data-sec="30">30 秒</button>
+            <button class="btn btn-secondary preset-btn" data-sec="60">1 分鐘</button>
+            <button class="btn btn-secondary preset-btn" data-sec="180">3 分鐘</button>
+            <button class="btn btn-secondary preset-btn" data-sec="300">5 分鐘</button>
+            <button class="btn btn-secondary preset-btn" data-sec="600">10 分鐘</button>
+            <button class="btn btn-secondary preset-btn" data-sec="900">15 分鐘</button>
+          </div>
+          <div class="custom-timer-input">
+            <label for="timer-custom-min">自訂 分：</label><input type="number" id="timer-custom-min" min="0" max="99" value="5">
+            <label for="timer-custom-sec">秒：</label><input type="number" id="timer-custom-sec" min="0" max="59" value="0">
+            <button class="btn btn-secondary btn-sm" id="btn-timer-custom">套用</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 4. 隨機分組器 ===== -->
+    <section class="tab-content" id="tab-grouper">
+      <div class="card title-card"><h2>🎲 隨機分組器</h2><p>將班級學生快速且公正地隨機分配到各小組。</p></div>
+      <div class="grouper-layout">
+        <div class="card">
+          <h3>⚙️ 分組設定</h3>
+          <div class="form-group">
+            <label>分組依據：</label>
+            <div class="radio-group">
+              <label><input type="radio" name="group-by" value="count" checked> 指定小組總數</label>
+              <label><input type="radio" name="group-by" value="size"> 指定每組人數</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="group-num-input" id="lbl-group-num">預期分組數量：</label>
+            <input type="number" id="group-num-input" min="1" max="50" value="4">
+          </div>
+          <button class="btn btn-primary" id="btn-make-groups" style="width:100%">🎲 開始隨機分組</button>
+          <p class="help-text">名單來源：「雲端與名單設定」中的學生名單（目前 <b id="grouper-count">0</b> 人）。</p>
+        </div>
+        <div class="card">
+          <h3>📋 分組結果</h3>
+          <div class="groups-container" id="groups-container"><div class="empty-msg">請設定參數並點擊按鈕開始分組。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 5. 異質性分組工作表 ===== -->
+    <section class="tab-content" id="tab-teambuilder">
+      <div class="card title-card"><h2>🧩 異質性分組工作表</h2><p>手動編排各組成員與職務（拖曳或點選皆可），搭配組別計分、榮譽證書、班級公約，並可列印 A4 工作表。</p></div>
+
+      <div class="card tb-toolbar">
+        <div class="tb-row">
+          <div class="tb-field"><label>班級</label><input type="text" id="tb-class" placeholder="例如：601" style="width:84px"></div>
+          <div class="tb-field"><label>日期</label><input type="text" id="tb-date" placeholder="例如：2026/10/23" style="width:130px"></div>
+          <div class="tb-field"><label>學科 / 領域</label><input type="text" id="tb-subject" placeholder="例如：國語文" style="width:120px"></div>
+          <div class="tb-field tb-grow"><label>單元主題</label><input type="text" id="tb-topic" placeholder="例如：第三課 觀察與發現"></div>
+          <div class="tb-field"><label>組數設定</label><select id="tb-numgroups"></select></div>
+          <button class="btn btn-secondary btn-sm" id="tb-btn-import">📥 匯入名單</button>
+          <button class="btn btn-primary btn-sm" id="tb-btn-print">🖨️ 列印 / 預覽</button>
+        </div>
+        <div class="tb-score-bar">
+          <span class="tb-pill">🏆 全班計分控制</span>
+          <button class="btn btn-success btn-sm" id="tb-all-add">➕ 全體加分</button>
+          <button class="btn btn-danger btn-sm" id="tb-all-sub">➖ 全體扣分</button>
+          <button class="btn btn-secondary btn-sm" id="tb-reset-score">↺ 分數歸零</button>
+        </div>
+      </div>
+
+      <div class="tb-body">
+        <div class="tb-side">
+          <div class="card" id="tb-pool-card">
+            <h3>👤 未分組名單 <span class="badge" id="tb-pool-count">0</span>
+              <button class="btn btn-secondary btn-sm" id="tb-edit-toggle" style="margin-left:auto;padding:4px 9px" title="直接編輯名單">✏️</button></h3>
+            <div id="tb-pool" class="tb-pool"></div>
+            <textarea id="tb-edit" class="tb-edit" style="display:none" placeholder="在此直接輸入或貼上名單，每行一個名字…"></textarea>
+            <div class="tb-pool-actions">
+              <button class="btn btn-secondary btn-sm" id="tb-roster">📋 從班級名單載入</button>
+              <button class="btn btn-secondary btn-sm" id="tb-fill">🔄 依序填入空缺</button>
+              <button class="btn btn-secondary btn-sm" id="tb-fill-random">🎲 隨機平均填入</button>
+              <button class="btn btn-danger btn-sm" id="tb-clear">🗑️ 重置所有分組</button>
+            </div>
+            <p class="tb-hint">💡 電腦：可拖曳姓名到座位。<br>平板：先點「座位」再點「姓名」即可放入；點已有人的座位再點另一座位可互換。直接點姓名＝自動放入第一個空位。</p>
+          </div>
+          <div class="card">
+            <h3>職務說明設定</h3>
+            <div id="tb-roles"></div>
+            <div class="tb-hint" style="text-align:right">＊此處修改會同步到右側表格與列印稿</div>
+          </div>
+        </div>
+        <div>
+          <div class="tb-groups" id="tb-groups"></div>
+          <div class="card tb-rules">
+            <h3>📜 班級公約 / 課堂守則</h3>
+            <textarea id="tb-rules"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 6. 互動音效板 ===== -->
+    <section class="tab-content" id="tab-soundboard">
+      <div class="card title-card"><h2>🎵 教師互動音效板</h2><p>上課常用快捷音效，一鍵發聲，幫助掌控班級秩序、營造氣氛（音效皆由瀏覽器合成，不需外部檔案）。</p></div>
+      <div class="soundboard-grid">
+        <button class="card sound-card" data-sound="attention"><span class="sound-emoji">🔔</span>請注意聽（叮咚）</button>
+        <button class="card sound-card" data-sound="correct"><span class="sound-emoji">🎉</span>答對了（叮咚加分）</button>
+        <button class="card sound-card" data-sound="wrong"><span class="sound-emoji">❌</span>答錯了（叭叭）</button>
+        <button class="card sound-card" data-sound="applause"><span class="sound-emoji">👏</span>熱烈掌聲</button>
+        <button class="card sound-card" data-sound="drumroll"><span class="sound-emoji">🥁</span>緊張鼓聲（抽籤氣氛）</button>
+        <button class="card sound-card" data-sound="cheer"><span class="sound-emoji">🙌</span>歡呼喝采</button>
+      </div>
+    </section>
+
+    <!-- ===== 7. 趣味音量計 ===== -->
+    <section class="tab-content" id="tab-noise">
+      <div class="card title-card"><h2>🔊 班級趣味音量計</h2><p>即時監測教室噪音，用可愛的泡泡與表情引導學生自主控制音量：太吵泡泡就會破掉！</p></div>
+      <div class="noise-layout">
+        <div class="card noise-main">
+          <div id="noise-off" class="noise-unauthorized-box">
+            <span class="noise-large-emoji">🎤</span>
+            <p>需要使用麥克風權限以監測音量（音訊只在本機分析，不會上傳）</p>
+            <button class="btn btn-primary" id="btn-start-mic">🎤 開啟麥克風監測</button>
+          </div>
+          <div id="noise-on" class="noise-monitor-box">
+            <div class="noise-status-header">
+              <span class="noise-emoji-display" id="noise-emoji">😇</span>
+              <div><h3 id="noise-title" style="margin:0 0 4px">班級狀態：安靜乖巧</h3><p id="noise-desc" style="margin:0;color:var(--muted)">大家做得很好，請保持安靜！</p></div>
+            </div>
+            <div>
+              <div class="noise-meter-bg"><div class="noise-meter-bar" id="noise-bar"></div><div class="noise-threshold-marker" id="noise-marker" style="left:70%"></div></div>
+              <div class="noise-meter-labels"><span>🤫 安靜</span><span>🗣️ 討論</span><span>🚨 吵鬧</span></div>
+            </div>
+            <canvas class="noise-wave-canvas" id="noise-canvas" height="220"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h3>⚙️ 音量監控設定</h3>
+          <div class="form-group">
+            <label>警告音量門檻（<span id="lbl-threshold">70</span>%）</label>
+            <input type="range" id="slider-threshold" min="10" max="100" value="70" style="width:100%">
+          </div>
+          <div class="form-group">
+            <label>超標警告動作：</label>
+            <div class="checkbox-group">
+              <label><input type="checkbox" id="chk-alert-sound" checked> 🔊 超標自動播放「噓～」提示音</label>
+              <label><input type="checkbox" id="chk-alert-flash" checked> 🟥 超標畫面紅光閃爍警告</label>
+            </div>
+          </div>
+          <hr>
+          <div class="form-group">
+            <label>麥克風敏感度（<span id="lbl-sens">1.0</span>x）</label>
+            <input type="range" id="slider-sens" min="5" max="30" value="10" style="width:100%">
+            <p class="help-text">如果教室內麥克風收音太小，可調高敏感度。</p>
+          </div>
+          <button class="btn btn-danger btn-sm" id="btn-stop-mic" style="width:100%;display:none">⏹️ 停止麥克風監測</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 8. 段考成績單 ===== -->
+    <section class="tab-content" id="tab-report-card">
+      <div class="card title-card"><h2>📊 學生段考成績個別通知單</h2><p>輸入各科段考成績，自動產生含「個人 vs 班級平均」對比圖的 A4 成績單，可個別或全班批次分頁列印。</p></div>
+      <div class="report-card-layout">
+        <div class="card">
+          <div class="rc-meta">
+            <div><label>學校名稱</label><input type="text" id="rc-school"></div>
+            <div><label>學期</label><input type="text" id="rc-term"></div>
+            <div><label>班級</label><input type="text" id="rc-class"></div>
+          </div>
+          <div class="rc-meta" id="rc-subjects"></div>
+          <div class="editor-header">
+            <h3>📝 全班成績輸入表單</h3>
+            <div class="editor-actions">
+              <button class="btn btn-secondary btn-sm" id="btn-report-import">➕ 載入班級名單</button>
+              <button class="btn btn-primary btn-sm" id="btn-report-save">💾 儲存並同步</button>
+              <button class="btn btn-secondary btn-sm" id="btn-report-load">🔄 重新載入</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="report-table">
+              <thead><tr><th>姓名</th><th id="th-chinese" style="width:72px">國語</th><th id="th-math" style="width:72px">數學</th><th id="th-english" style="width:72px">英語</th><th id="th-science" style="width:72px">自然</th><th id="th-social" style="width:72px">社會</th><th style="width:84px">學習態度</th><th>導師評語</th><th style="width:44px"></th></tr></thead>
+              <tbody id="report-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="preview-header">
+            <h3>👁️ 成績單個別預覽</h3>
+            <div class="preview-actions">
+              <button class="btn btn-secondary btn-sm" id="btn-print-single">🖨️ 列印此生</button>
+              <button class="btn btn-primary btn-sm" id="btn-print-all">🖨️ 批次列印全班</button>
+            </div>
+          </div>
+          <div class="form-group"><label for="select-preview">選擇預覽學生：</label>
+            <select id="select-preview"><option value="">請先輸入或載入學生名單</option></select></div>
+          <div class="paper-wrap"><div class="paper" id="paper"><div class="empty-preview">請選擇上方學生以進行預覽</div></div></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ===== 打掃輪值 ===== -->
+    <section class="tab-content" id="tab-cleaning">
+      <div class="card title-card"><h2>🧹 打掃輪值</h2><p>依班級名單自動分配打掃區域，可一鍵輪替、每日打卡、列印輪值表。</p></div>
+      <div class="card">
+        <div class="editor-header"><h3>👥 名單與區域</h3>
+          <div class="editor-actions">
+            <button class="btn btn-secondary btn-sm" id="cl-import-btn">📥 匯入名單</button>
+            <button class="btn btn-secondary btn-sm" id="cl-add-area">➕ 新增區域</button>
+            <button class="btn btn-primary btn-sm" id="cl-auto">🎲 自動分配</button>
+            <button class="btn btn-secondary btn-sm" id="cl-rotate">🔁 本週輪替</button>
+            <button class="btn btn-secondary btn-sm" id="cl-print">🖨️ 列印輪值表</button>
+          </div></div>
+        <div id="cl-import-box" class="x-box" style="display:none">
+          <label>貼上名單（換行、逗號、頓號分隔），或上傳 Excel / CSV（讀第一欄）：</label>
+          <textarea id="cl-import-text" rows="5" placeholder="張小明&#10;李大同&#10;王中天"></textarea>
+          <div class="settings-actions"><input type="file" id="cl-import-file" accept=".xlsx,.xls,.csv">
+            <button class="btn btn-primary btn-sm" id="cl-import-ok">確認匯入</button>
+            <button class="btn btn-secondary btn-sm" id="cl-use-all">改用全班名單</button></div>
+          <p class="help-text">此處匯入的名單只用於打掃輪值；不匯入則使用「雲端與名單設定」的全班名單。</p>
+        </div>
+        <p class="help-text" id="cl-info"></p>
+        <div id="cl-areas" class="x-grid"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="editor-header"><h3>✅ 本週打卡（點一下：✔ → ✘ → 空白）</h3>
+          <div class="editor-actions"><button class="btn btn-secondary btn-sm" id="cl-clear-check">🧽 清空打卡</button></div></div>
+        <div class="table-scroll"><table class="report-table" style="min-width:560px"><thead><tr><th>區域</th><th>姓名</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>✘ 次數</th></tr></thead><tbody id="cl-check"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ===== 紅單開立通知 ===== -->
+    <section class="tab-content" id="tab-redslip">
+      <div class="card title-card"><h2>🟥 紅單開立通知</h2><p>貼上座號或姓名（或匯入 Excel / CSV），自動產生紅單通知，A4 一頁四張，可直接列印。</p></div>
+      <div class="redslip-layout">
+        <div class="card">
+          <div class="rc-meta">
+            <div><label>學校名稱</label><input type="text" id="rs-school"></div>
+            <div><label>班級</label><input type="text" id="rs-class"></div>
+            <div><label>開立人（導師／科任）</label><input type="text" id="rs-teacher"></div>
+            <div><label>開立日期</label><input type="date" id="rs-date"></div>
+          </div>
+          <div class="form-group"><label for="rs-reason">預設事由</label>
+            <input type="text" id="rs-reason" list="rs-reason-list" placeholder="例：作業未繳交">
+            <datalist id="rs-reason-list"><option value="作業未繳交"><option value="上課遲到"><option value="服裝儀容不整"><option value="上課秩序不佳"><option value="未攜帶學用品"><option value="打掃不確實"><option value="未繳回家長簽章"></datalist></div>
+          <div class="form-group"><label for="rs-reason2">改善期限／備註（選填）</label><input type="text" id="rs-note" placeholder="例：請於下週一前補交"></div>
+          <div class="form-group"><label for="rs-text">名單或座號（每行一筆；可在後面加事由）：</label>
+            <textarea id="rs-text" rows="8" placeholder="3,5,12&#10;7 數學習作未交&#10;王小明&#10;15-18 遲到"></textarea>
+            <p class="help-text">座號依「全班名單」順序（第 1 位＝1 號）。支援 3,5,12、範圍 15-18、直接寫姓名；空格後的文字當作該行的事由。</p></div>
+          <div class="settings-actions">
+            <input type="file" id="rs-file" accept=".xlsx,.xls,.csv">
+            <button class="btn btn-primary" id="rs-gen">🟥 產生紅單</button>
+            <button class="btn btn-secondary" id="rs-all">👥 全班名單帶入</button>
+          </div>
+          <p class="help-text">Excel / CSV：第一欄座號或姓名，第二欄事由（選填）。</p>
+        </div>
+        <div class="card">
+          <div class="preview-header"><h3>👁️ 紅單預覽 <span id="rs-count" class="help-text"></span></h3>
+            <div class="preview-actions"><button class="btn btn-secondary btn-sm" id="rs-clear">🗑️ 清空</button><button class="btn btn-primary btn-sm" id="rs-print">🖨️ 列印全部</button></div></div>
+          <div class="paper-wrap"><div id="rs-preview"><div class="empty-preview">尚未產生紅單</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 9. 雲端與名單設定 ===== -->
+    <section class="tab-content" id="tab-settings">
+      <div class="card title-card"><h2>⚙️ 雲端同步與學生名單設定</h2><p>名單是全站共用的：抽籤、分組器、成績單都使用這裡的名單。雲端同步為選用功能（Google Apps Script + 試算表）。</p></div>
+      <div class="settings-layout">
+        <div class="card">
+          <h3>🔗 Apps Script 串接設定（選用）</h3>
+          <div class="form-group">
+            <label for="txt-api-url">Apps Script Web App API 網址：</label>
+            <input type="text" id="txt-api-url" placeholder="https://script.google.com/macros/s/.../exec">
+            <p class="help-text">不填也能正常使用，資料會存在這台裝置的瀏覽器。後端程式碼在專案的 <code>gas/Code.gs</code>。</p>
+          </div>
+          <div class="settings-actions">
+            <button class="btn btn-primary" id="btn-save-api">儲存 API 設定</button>
+            <button class="btn btn-secondary" id="btn-test-conn">🔌 測試連線</button>
+          </div>
+          <div id="conn-result" class="connection-result-box"></div>
+        </div>
+        <div class="card">
+          <h3>👥 學生名單管理</h3>
+          <div class="form-group">
+            <label for="txt-students">班級學生名單（每行一位，也可用逗號、頓號分隔）：</label>
+            <textarea id="txt-students" rows="12" placeholder="張小明&#10;李大同&#10;王中天"></textarea>
+          </div>
+          <div class="settings-actions">
+            <button class="btn btn-primary" id="btn-save-students">💾 儲存名單</button>
+            <button class="btn btn-secondary" id="btn-load-students">🔄 從雲端載入最新名單</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 匯入名單視窗 -->
+<div class="modal-back" id="import-modal">
+  <div class="modal">
+    <div class="modal-head"><span>匯入名單</span><button id="import-close">✕</button></div>
+    <div class="modal-body">
+      <div>
+        <label style="font-weight:700;font-size:.9rem;display:block;margin-bottom:6px">方式一：上傳 Excel / CSV</label>
+        <div class="dropzone"><input type="file" id="import-file" accept=".xlsx,.xls,.csv"><div style="font-size:1.6rem">📄</div>點擊或拖放檔案至此</div>
+      </div>
+      <div>
+        <label style="font-weight:700;font-size:.9rem;display:block;margin-bottom:6px">方式二：手動輸入 / 貼上</label>
+        <textarea id="import-text" style="height:120px" placeholder="請輸入學生姓名，以換行、逗號或頓號分隔…"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-secondary btn-sm" id="import-cancel">取消</button><button class="btn btn-primary btn-sm" id="import-ok">確認新增</button></div>
+  </div>
+</div>
+
+<div id="print-area" class="print-only-container"></div>
+<div id="toast" class="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="app.js?v=2"></script>
+<script src="extra.js?v=1"></script>
+</body>
+</html>
