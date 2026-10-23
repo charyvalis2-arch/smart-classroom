@@ -861,12 +861,19 @@ function initSettings() {
     const n = (prompt('新班級名稱（例：714）：', '') || '').trim(); if (!n) return;
     const c = { id: 'c' + Date.now().toString(36), name: n, students: [] }; state.classes.push(c); persistClasses(); renderClassSelects(); switchClass(c.id);
   });
+  const CLASS_KEYS = ['tb_state_', 'report_cards_data_', 'draw_drawn_', 'cl_zones_', 'cl_checks_', 'rs_slips_', 'rs_counts_'];
   $('btn-class-del').addEventListener('click', () => {
-    if (state.classes.length <= 3) { toast('⚠️ 至少要保留 3 個班級'); return; }
-    if (!confirm(`確定刪除「${currentClass().name}」及其名單、分組、成績紀錄嗎？`)) return;
-    const id = state.classId; state.classes = state.classes.filter(c => c.id !== id); persistClasses();
-    ['tb_state_', 'report_cards_data_', 'draw_drawn_', 'cl_zones_', 'cl_checks_', 'rs_counts_'].forEach(p => localStorage.removeItem(p + id));
-    state.classId = ''; switchClass(state.classes[0].id);
+    if (state.classes.length <= 1) { toast('⚠️ 至少要保留 1 個班級（可改用「重設此班」清空資料）'); return; }
+    if (!confirm(`確定刪除「${currentClass().name}」嗎？\n該班的名單、抽籤紀錄、分組、成績單、打掃打卡、紅單與累計都會一併刪除，無法復原。`)) return;
+    const id = state.classId, name = currentClass().name; state.classes = state.classes.filter(c => c.id !== id); persistClasses();
+    CLASS_KEYS.forEach(p => localStorage.removeItem(p + id));
+    state.classId = ''; switchClass(state.classes[0].id); toast(`🗑️ 已刪除「${name}」`);
+  });
+  $('btn-class-reset').addEventListener('click', () => {
+    if (!confirm(`要把「${currentClass().name}」重設成全新的班級嗎？\n會清空名單、抽籤紀錄、分組、成績單、打掃打卡與紅單（班級名稱保留）。`)) return;
+    const id = state.classId; CLASS_KEYS.forEach(p => localStorage.removeItem(p + id));
+    currentClass().students = []; persistClasses(); state.classId = ''; state.reportCards = []; switchClass(id);
+    toast('🔄 已重設，請到下方貼上新名單');
   });
   $('txt-api-url').value = state.apiUrl;
   $('btn-save-api').addEventListener('click', () => {

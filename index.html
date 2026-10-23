@@ -433,8 +433,8 @@
         </div>
         <div class="card">
           <h3>👥 學生名單管理</h3>
-          <div class="form-group"><label>目前編輯的班級（至少 3 個班，可自行新增）：</label>
-            <div class="class-manage"><select class="class-select"></select><input type="text" id="class-rename" placeholder="班級名稱"><button class="btn btn-secondary btn-sm" id="btn-class-rename">✏️ 改名</button><button class="btn btn-secondary btn-sm" id="btn-class-add">➕ 新增班級</button><button class="btn btn-danger btn-sm" id="btn-class-del">🗑️ 刪除</button></div></div>
+          <div class="form-group"><label>目前編輯的班級（可自行新增、改名、刪除；換班時可刪除或重設）：</label>
+            <div class="class-manage"><select class="class-select"></select><input type="text" id="class-rename" placeholder="班級名稱"><button class="btn btn-secondary btn-sm" id="btn-class-rename">✏️ 改名</button><button class="btn btn-secondary btn-sm" id="btn-class-add">➕ 新增班級</button><button class="btn btn-secondary btn-sm" id="btn-class-reset">🔄 重設此班</button><button class="btn btn-danger btn-sm" id="btn-class-del">🗑️ 刪除此班</button></div></div>
           <div class="form-group">
             <label for="txt-students">班級學生名單（每行一位，也可用逗號、頓號分隔）：</label>
             <textarea id="txt-students" rows="12" placeholder="張小明&#10;李大同&#10;王中天"></textarea>
@@ -472,7 +472,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="vendor/docx.js"></script>
-<script src="app.js?v=4"></script>
-<script src="extra.js?v=2"></script>
+<script src="app.js?v=5"></script>
+<script src="extra.js?v=3"></script>
 </body>
 </html>

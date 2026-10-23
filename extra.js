@@ -71,7 +71,7 @@ const CL = {
   cur: '', week: iso(mondayOf(new Date())), calMonth: null,
   k(n) { return n + '_' + state.classId; },
   load() {
-    const first = state.classes[0] && state.classes[0].id === state.classId;
+    const first = state.classId === 'c1';  // 只有最初的 711 班套用範本的座號分配
     this.zones = store.get(this.k('cl_zones'), null);
     if (!Array.isArray(this.zones) || !this.zones.length) { this.zones = ['inner', 'outer1', 'outer2'].map(t => makeZone(t, first)); }
     this.checks = store.get(this.k('cl_checks'), {});
